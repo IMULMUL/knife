@@ -9,26 +9,28 @@ import java.util.List;
 
 import javax.swing.JMenuItem;
 
+import com.bit4woo.utilbox.burp.HelperPlus;
+
 import burp.BurpExtender;
-import burp.Getter;
 import burp.IBurpExtenderCallbacks;
 import burp.IContextMenuInvocation;
 import burp.IExtensionHelpers;
 import burp.IHttpRequestResponse;
 import burp.Methods;
+import config.GUI;
 
 
 public class ChunkedEncodingMenu extends JMenuItem {
 	//JMenuItem vs. JMenu
 	public BurpExtender burp;
 	public IContextMenuInvocation invocation;
-	public Getter getter;
+	public HelperPlus getter;
     public ChunkedEncodingMenu(BurpExtender burp){
     	
     	try {
 			this.invocation = burp.invocation;
 			this.burp = burp;
-			this.getter = new Getter(burp.helpers);
+			this.getter = new HelperPlus(burp.helpers);
 			IHttpRequestResponse[] messages = this.invocation.getSelectedMessages();
 			if (messages == null || messages.length == 0) {
 				return;
@@ -47,20 +49,20 @@ public class ChunkedEncodingMenu extends JMenuItem {
 }
 
 class ChunkedEncoding_Action implements ActionListener{
-	private IContextMenuInvocation invocation;
+	private final IContextMenuInvocation invocation;
 	public IExtensionHelpers helpers;
 	public PrintWriter stdout;
 	public PrintWriter stderr;
 	public IBurpExtenderCallbacks callbacks;
-	private BurpExtender burp;
+	private final BurpExtender burp;
 	
 	public ChunkedEncoding_Action(BurpExtender burp,IContextMenuInvocation invocation) {
 		this.burp = burp;
 		this.invocation  = invocation;
         this.helpers = burp.helpers;
-        this.callbacks = burp.callbacks;
-        this.stderr = burp.stderr;
-        this.stdout = burp.stdout;
+        this.callbacks = BurpExtender.callbacks;
+        this.stderr = BurpExtender.stderr;
+        this.stdout = BurpExtender.stdout;
 	}
 	
 	@Override
@@ -69,7 +71,7 @@ class ChunkedEncoding_Action implements ActionListener{
 		IHttpRequestResponse[] selectedItems = invocation.getSelectedMessages();
 		IHttpRequestResponse messageInfo = selectedItems[0];
 		
-		Getter getter = new Getter(helpers);
+		HelperPlus getter = new HelperPlus(helpers);
 		
     	List<String> headers = getter.getHeaderList(true, messageInfo);
     	byte[] body = getter.getBody(true, messageInfo);
@@ -85,10 +87,10 @@ class ChunkedEncoding_Action implements ActionListener{
         	
             try {
             	boolean useComment =false;
-            	if (burp.tableModel.getConfigValueByKey("Chunked-UseComment") != null) {
+            	if (GUI.getConfigTableModel().getConfigValueByKey("Chunked-UseComment") != null) {
             		useComment = true;
             	}
-            	String lenStr = burp.tableModel.getConfigValueByKey("Chunked-Length");
+            	String lenStr = GUI.getConfigTableModel().getConfigValueByKey("Chunked-Length");
             	int len =10;
             	if (lenStr !=null) {
             		len = Integer.parseInt(lenStr);
@@ -119,6 +121,4 @@ class ChunkedEncoding_Action implements ActionListener{
     	selectedItems[0].setRequest(newRequestBytes);
 	}
 	
-	
-
 }

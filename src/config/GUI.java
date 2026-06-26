@@ -28,6 +28,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTextField;
 import javax.swing.SortOrder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -47,7 +48,7 @@ public class GUI extends JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public static Config config = new Config("default");
+	public static ConfigManager configManager = new ConfigManager("default");
 
 	public PrintWriter stdout;
 	public PrintWriter stderr;
@@ -58,8 +59,8 @@ public class GUI extends JFrame {
 	private JLabel lblNewLabel_2;
 	protected JScrollPane configPanel;
 	private SortOrder sortedMethod;
-	public ConfigTable table;//create in burpextender.java
-	public static ConfigTableModel tableModel;//create in burpextender.java
+	protected ConfigTable configTable;//create in burpextender.java
+	protected static ConfigTableModel configTableModel;//create in burpextender.java
 	private JButton RemoveButton;
 	private JButton AddButton;
 	private JSplitPane TargetSplitPane;
@@ -68,6 +69,7 @@ public class GUI extends JFrame {
 	public JCheckBox chckbx_repeater;
 	public JCheckBox chckbx_intruder;
 	private JCheckBox chckbx_scanner;
+	private JCheckBox chckbx_extender;
 	private JCheckBox chckbx_target;//content discover
 	private JCheckBox chckbx_scope;
 
@@ -82,7 +84,7 @@ public class GUI extends JFrame {
 			public void run() {
 				try {
 					GUI frame = new GUI();
-					frame.showToUI(new Config(""));
+					frame.showToUI(new ConfigManager(""));
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -90,6 +92,32 @@ public class GUI extends JFrame {
 			}
 		});
 	}
+	
+	
+
+	public ConfigTable getConfigTable() {
+		return configTable;
+	}
+
+
+
+	public void setConfigTable(ConfigTable configTable) {
+		this.configTable = configTable;
+	}
+
+
+
+	public static ConfigTableModel getConfigTableModel() {
+		return configTableModel;
+	}
+
+
+
+	public static void setConfigTableModel(ConfigTableModel configTableModel) {
+		GUI.configTableModel = configTableModel;
+	}
+
+
 
 	/**
 	 * Create the frame.
@@ -120,7 +148,7 @@ public class GUI extends JFrame {
 		chckbx_proxy = new JCheckBox("Proxy");
 		chckbx_proxy.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				config.setEnableStatus(checkEnabledFor());
+				configManager.setEnableStatus(checkEnabledFor());
 			}
 		});
 		chckbx_proxy.setSelected(true);
@@ -129,7 +157,7 @@ public class GUI extends JFrame {
 		chckbx_repeater = new JCheckBox("Repeater");
 		chckbx_repeater.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				config.setEnableStatus(checkEnabledFor());
+				configManager.setEnableStatus(checkEnabledFor());
 			}
 		});
 		panel.add(chckbx_repeater);
@@ -137,7 +165,7 @@ public class GUI extends JFrame {
 		chckbx_intruder = new JCheckBox("Intruder");
 		chckbx_intruder.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				config.setEnableStatus(checkEnabledFor());
+				configManager.setEnableStatus(checkEnabledFor());
 			}
 		});
 		panel.add(chckbx_intruder);
@@ -145,18 +173,26 @@ public class GUI extends JFrame {
 		chckbx_target = new JCheckBox("Target");
 		chckbx_target.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				config.setEnableStatus(checkEnabledFor());
+				configManager.setEnableStatus(checkEnabledFor());
 			}
 		});
 		panel.add(chckbx_target);
 
-		chckbx_scanner = new JCheckBox("Scanner ]");
+		chckbx_scanner = new JCheckBox("Scanner");
 		chckbx_scanner.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				config.setEnableStatus(checkEnabledFor());
+				configManager.setEnableStatus(checkEnabledFor());
 			}
 		});
 		panel.add(chckbx_scanner);
+		
+		chckbx_extender = new JCheckBox("Extender ]");
+		chckbx_extender.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				configManager.setEnableStatus(checkEnabledFor());
+			}
+		});
+		panel.add(chckbx_extender);
 
 		JLabel lblNewLabel_display = new JLabel(" AND [");
 		panel.add(lblNewLabel_display);
@@ -164,7 +200,7 @@ public class GUI extends JFrame {
 		chckbx_scope = new JCheckBox("also In Scope ]");
 		chckbx_scope.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				config.setOnlyForScope(chckbx_scope.isSelected());
+				configManager.setOnlyForScope(chckbx_scope.isSelected());
 			}
 		});
 		chckbx_scope.setSelected(false);
@@ -172,6 +208,25 @@ public class GUI extends JFrame {
 
 		JLabel lblNewLabel_display1 = new JLabel(" will be auto updated");
 		panel.add(lblNewLabel_display1);
+		
+		
+		JButton buttonSearch = new JButton("Search");
+		JTextField textFieldSearch = new JTextField(null,"",20);
+		textFieldSearch.addActionListener(null);
+		textFieldSearch.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				buttonSearch.doClick();
+			}
+		});
+		panel.add(textFieldSearch);
+
+		buttonSearch.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String keyword = textFieldSearch.getText();
+				configTable.search(keyword,false);
+			}
+		});
+		panel.add(buttonSearch);
 
 		////////////////////////////////////config area///////////////////////////////////////////////////////
 
@@ -206,8 +261,8 @@ public class GUI extends JFrame {
 		AddButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				//tableModel = table.getModel();
-				tableModel.addNewConfigEntry(new ConfigEntry("","","",true));
-				stdout.println("add: "+new Gson().toJson(config));
+				configTableModel.addNewConfigEntry(new ConfigEntry("","","",true));
+				stdout.println("add: "+new Gson().toJson(configManager));
 				//saveConfigToBurp();
 				//会触发modelListener 更新config。所以需要调用showToUI。
 				//showToUI(config);
@@ -221,8 +276,8 @@ public class GUI extends JFrame {
 		panel_1.add(RemoveButton);
 		RemoveButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int[] rowindexs = table.getSelectedModelRows();
-				tableModel.removeRows(rowindexs);
+				int[] rowindexs = configTable.getSelectedModelRows();
+				configTableModel.removeRows(rowindexs);
 				//saveConfigToBurp();
 			}
 		});
@@ -239,7 +294,7 @@ public class GUI extends JFrame {
 		 */
 
 		panel_1.add(new Label(" |"));
-
+		
 		/**
 		 * 旧配置全删除，使用选中文件中的配置。
 		 */
@@ -256,10 +311,10 @@ public class GUI extends JFrame {
 					try {
 						File file=fc.getSelectedFile();
 						String contents = Files.toString(file, Charsets.UTF_8);
-						config = new Gson().fromJson(contents, Config.class);
+						configManager = new Gson().fromJson(contents, ConfigManager.class);
 						stdout.println("Load knife config from"+ file.getName());
 						//List<String> lines = Files.readLines(file, Charsets.UTF_8);
-						showToUI(config);
+						showToUI(configManager);
 
 					} catch (IOException e1) {
 						e1.printStackTrace(stderr);
@@ -298,10 +353,10 @@ public class GUI extends JFrame {
 					try {
 						File file=fc.getSelectedFile();
 						String contents = Files.toString(file, Charsets.UTF_8);
-						config = new Gson().fromJson(contents, Config.class);
-						List<String> newEntries = config.getStringConfigEntries();
+						configManager = new Gson().fromJson(contents, ConfigManager.class);
+						List<String> newEntries = configManager.getStringConfigEntries();
 
-						List<String> oldEntries = tableModel.getConfigJsons();//以此为修改基础，已存在的key不修改。
+						List<String> oldEntries = configTableModel.getConfigJsons();//以此为修改基础，已存在的key不修改。
 						List<String> deprecatedEntryKeys = Arrays.asList("DismissedTargets DismissedAutoForward DismissedHost DismissedURL DismissAction Proxy-ServerList Proxy-UseRandomMode".split(" "));
 
 						List<String> oldKeys = new ArrayList<String>();
@@ -329,10 +384,10 @@ public class GUI extends JFrame {
 							}
 						}
 
-						config.setStringConfigEntries(oldEntries);
+						configManager.setStringConfigEntries(oldEntries);
 						stdout.println("Merge config from "+ file.getName() +" with current config" );
 						//List<String> lines = Files.readLines(file, Charsets.UTF_8);
-						showToUI(config);
+						showToUI(configManager);
 
 					} catch (IOException e1) {
 						e1.printStackTrace(stderr);
@@ -352,7 +407,7 @@ public class GUI extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				int user_input = JOptionPane.showConfirmDialog(null, "Are you sure to restore all config to default?","Restore Config",JOptionPane.YES_NO_OPTION);
 				if (JOptionPane.YES_OPTION == user_input) {
-					showToUI(new Config().FromJson(initConfig()));
+					showToUI(new ConfigManager().FromJson(initConfig()));
 					//saveConfigToBurp();
 				}else {
 
@@ -408,51 +463,60 @@ public class GUI extends JFrame {
 
 	//////////////////////////////methods//////////////////////////////////////
 
-	public void showToUI(Config config) {
-		tableModel = table.getModel();
-		tableModel.setConfigEntries(new ArrayList<ConfigEntry>());
+	public void showToUI(ConfigManager configManager) {
+		configTableModel = (ConfigTableModel) configTable.getModel();
+		configTableModel.setConfigEntries(new ArrayList<ConfigEntry>());
 		//clearTable
 
-		for (String stringEntry:config.getStringConfigEntries()) {
+		for (String stringEntry: configManager.getStringConfigEntries()) {
 			ConfigEntry entry  = new ConfigEntry().FromJson(stringEntry);
-			tableModel.addNewConfigEntry(entry);
+			configTableModel.addNewConfigEntry(entry);
 		}
-		table.setupTypeColumn();// must setup again when data cleaned
-		table.tableHeaderLengthInit();
+
+		configTable.setupTypeColumn();
+		//call this function must after table data loaded !!!!
+		// must setup again when data cleaned
+		configTable.tableHeaderLengthInit();
 
 
-		if (IBurpExtenderCallbacks.TOOL_INTRUDER ==(config.getEnableStatus() & IBurpExtenderCallbacks.TOOL_INTRUDER)) {
+		if (IBurpExtenderCallbacks.TOOL_INTRUDER ==(configManager.getEnableStatus() & IBurpExtenderCallbacks.TOOL_INTRUDER)) {
 			chckbx_intruder.setSelected(true);
 		}else {
 			chckbx_intruder.setSelected(false);
 		}
-		if (IBurpExtenderCallbacks.TOOL_PROXY ==(config.getEnableStatus() & IBurpExtenderCallbacks.TOOL_PROXY)) {
+		if (IBurpExtenderCallbacks.TOOL_PROXY ==(configManager.getEnableStatus() & IBurpExtenderCallbacks.TOOL_PROXY)) {
 			chckbx_proxy.setSelected(true);
 		}else {
 			chckbx_proxy.setSelected(false);
 		}
-		if (IBurpExtenderCallbacks.TOOL_REPEATER ==(config.getEnableStatus() & IBurpExtenderCallbacks.TOOL_REPEATER)) {
+		if (IBurpExtenderCallbacks.TOOL_REPEATER ==(configManager.getEnableStatus() & IBurpExtenderCallbacks.TOOL_REPEATER)) {
 			chckbx_repeater.setSelected(true);
 		}else {
 			chckbx_repeater.setSelected(false);
 		}
-		if (IBurpExtenderCallbacks.TOOL_SCANNER ==(config.getEnableStatus() & IBurpExtenderCallbacks.TOOL_SCANNER)) {
+		if (IBurpExtenderCallbacks.TOOL_SCANNER ==(configManager.getEnableStatus() & IBurpExtenderCallbacks.TOOL_SCANNER)) {
 			chckbx_scanner.setSelected(true);
 		}else {
 			chckbx_scanner.setSelected(false);
 		}
-		if (IBurpExtenderCallbacks.TOOL_TARGET ==(config.getEnableStatus() & IBurpExtenderCallbacks.TOOL_TARGET)) {
+		if (IBurpExtenderCallbacks.TOOL_TARGET ==(configManager.getEnableStatus() & IBurpExtenderCallbacks.TOOL_TARGET)) {
 			chckbx_target.setSelected(true);
 		}else {
 			chckbx_target.setSelected(false);
 		}
 		
-		chckbx_scope.setSelected(config.isOnlyForScope());
+		if (IBurpExtenderCallbacks.TOOL_EXTENDER ==(configManager.getEnableStatus() & IBurpExtenderCallbacks.TOOL_EXTENDER)) {
+			chckbx_extender.setSelected(true);
+		}else {
+			chckbx_extender.setSelected(false);
+		}
+		
+		chckbx_scope.setSelected(configManager.isOnlyForScope());
 	}
 
 	public static String getAllConfig() {
-		config.setStringConfigEntries(tableModel.getConfigJsons());
-		return config.ToJson();
+		configManager.setStringConfigEntries(configTableModel.getConfigJsons());
+		return configManager.ToJson();
 	}
 
 	public static void saveConfigToBurp() {
@@ -476,6 +540,9 @@ public class GUI extends JFrame {
 		}
 		if (chckbx_target.isSelected()) {
 			status += IBurpExtenderCallbacks.TOOL_TARGET;
+		}
+		if (chckbx_extender.isSelected()) {
+			status += IBurpExtenderCallbacks.TOOL_EXTENDER;
 		}
 		return status;
 	}

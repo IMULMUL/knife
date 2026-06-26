@@ -3,18 +3,21 @@ package knife;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+
+import com.bit4woo.utilbox.utils.SystemUtils;
+import com.ibm.icu.impl.duration.impl.Utils;
 
 import burp.BurpExtender;
 import burp.IBurpExtenderCallbacks;
 import burp.IContextMenuInvocation;
 import burp.IExtensionHelpers;
 import burp.IHttpRequestResponse;
-import burp.Utils;
 import config.ConfigEntry;
-import manager.DismissedTargetsManager;
+import config.ProcessManager;
 
 public class DismissMenu extends JMenuItem {//JMenuItem vs. JMenu
 
@@ -26,7 +29,7 @@ public class DismissMenu extends JMenuItem {//JMenuItem vs. JMenu
 
 class Dismiss_Action implements ActionListener{
 	//scope matching is actually String matching!!
-	private IContextMenuInvocation invocation;
+	private final IContextMenuInvocation invocation;
 	public BurpExtender myburp;
 	public IExtensionHelpers helpers;
 	public PrintWriter stdout;
@@ -38,7 +41,7 @@ class Dismiss_Action implements ActionListener{
 		this.myburp = burp;
 		this.helpers = burp.helpers;
 		this.callbacks = BurpExtender.callbacks;
-		this.stderr = burp.stderr;
+		this.stderr = BurpExtender.stderr;
 	}
 
 	@Override
@@ -49,12 +52,12 @@ class Dismiss_Action implements ActionListener{
 		IHttpRequestResponse[] messages = invocation.getSelectedMessages();
 		
 		String keyword = null;
-		if (action == ConfigEntry.Action_Drop_Request_If_Keyword_Matches || 
-				action == ConfigEntry.Action_Forward_Request_If_Keyword_Matches) {
+		if (Objects.equals(action, ConfigEntry.Action_Drop_Request_If_Keyword_Matches) ||
+				Objects.equals(action, ConfigEntry.Action_Forward_Request_If_Keyword_Matches)) {
 			keyword = fetchKeyword();
 		}
 		
-		DismissedTargetsManager.putRule(messages, keyword, action);
+		ProcessManager.putDismissRule(messages, keyword, action);
 	}
 
 	public static String fetchChangeType() {
@@ -71,9 +74,9 @@ class Dismiss_Action implements ActionListener{
 				JOptionPane.INFORMATION_MESSAGE, null,
 				options, options[0]);
 
-		if (selectedValue == options[options.length-1]) {
+		if (Objects.equals(selectedValue, options[options.length - 1])) {
 			try {
-				Utils.browserOpen("https://github.com/bit4woo/knife/blob/master/README.md", null);
+				SystemUtils.browserOpen("https://github.com/bit4woo/knife/blob/master/README.md", null);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

@@ -12,14 +12,16 @@ import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 
+import com.bit4woo.utilbox.burp.HelperPlus;
+
 import burp.BurpExtender;
-import burp.Getter;
 import burp.IBurpExtenderCallbacks;
 import burp.IContextMenuInvocation;
 import burp.IExtensionHelpers;
 import burp.IHttpRequestResponse;
+import config.CookieFinder;
 import config.GUI;
-import manager.HeaderManager;
+import config.ProcessManager;
 
 
 public class UpdateHeaderMenu extends JMenu {
@@ -55,21 +57,24 @@ public class UpdateHeaderMenu extends JMenu {
 	public List<String> possibleHeaderNames(IContextMenuInvocation invocation) {
 		IHttpRequestResponse[] selectedItems = invocation.getSelectedMessages();
 		//byte selectedInvocationContext = invocation.getInvocationContext();
-		Getter getter = new Getter(BurpExtender.callbacks.getHelpers());
-		LinkedHashMap<String, String> headers = getter.getHeaderMap(true, selectedItems[0]);
+		HelperPlus getter = new HelperPlus(BurpExtender.callbacks.getHelpers());
+		List<String> headers = getter.getHeaderList(true, selectedItems[0]);
 
-		String tokenHeadersStr = GUI.tableModel.getConfigValueByKey("tokenHeaders");
+		String tokenHeadersStr = GUI.getConfigTableModel().getConfigValueByKey("tokenHeaders");
 
 		List<String> ResultHeaders = new ArrayList<String>();
 		
 		if (tokenHeadersStr!= null && headers != null) {
 			String[] tokenHeaders = tokenHeadersStr.split(",");
 			List<String> keywords = Arrays.asList(tokenHeaders);
-			Iterator<String> it = headers.keySet().iterator();
-			while (it.hasNext()) {
-				String item = it.next();
-				if (containOneOfKeywords(item,keywords,false)) {
-					ResultHeaders.add(item);
+			for (String header:headers) {
+				try {
+					String headerKey = header.split(":",2)[0].trim();
+					if (containOneOfKeywords(headerKey,keywords,false)) {
+						ResultHeaders.add(headerKey);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 		}
@@ -92,20 +97,20 @@ public class UpdateHeaderMenu extends JMenu {
 }
 
 class UpdateHeader_Action implements ActionListener{
-	private IContextMenuInvocation invocation;
+	private final IContextMenuInvocation invocation;
 	public IExtensionHelpers helpers;
 	public PrintWriter stdout;
 	public PrintWriter stderr;
 	public IBurpExtenderCallbacks callbacks;
 
-	private String headerName;
+	private final String headerName;
 
 	public UpdateHeader_Action(BurpExtender burp,IContextMenuInvocation invocation,String headerName) {
 		this.invocation  = invocation;
 		this.helpers = burp.helpers;
-		this.callbacks = burp.callbacks;
-		this.stderr = burp.stderr;
-		this.stdout = burp.stdout;
+		this.callbacks = BurpExtender.callbacks;
+		this.stderr = BurpExtender.stderr;
+		this.stdout = BurpExtender.stdout;
 		this.headerName = headerName;
 	}
 
@@ -113,10 +118,10 @@ class UpdateHeader_Action implements ActionListener{
 	public void actionPerformed(ActionEvent event) {
 		if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
 			IHttpRequestResponse[] selectedItems = invocation.getSelectedMessages();
-			String headerLine = HeaderManager.getLatestHeaderFromHistory(selectedItems[0], headerName);
+			String headerLine = CookieFinder.getLatestHeaderFromHistory(selectedItems[0], headerName).getValue();
 
 			if (headerLine != null) {
-				HeaderManager.updateHeader(true,selectedItems[0],headerLine);
+				ProcessManager.updateHeader(true,selectedItems[0],headerLine);
 			}
 		}
 	}

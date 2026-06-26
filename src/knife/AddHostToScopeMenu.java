@@ -5,8 +5,9 @@ import java.awt.event.ActionListener;
 import java.io.PrintWriter;
 import java.net.URL;
 
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+
+import com.bit4woo.utilbox.burp.HelperPlus;
 
 import burp.BurpExtender;
 import burp.IBurpExtenderCallbacks;
@@ -26,7 +27,7 @@ public class AddHostToScopeMenu extends JMenuItem {//JMenuItem vs. JMenu
 
 class AddHostToScope_Action implements ActionListener{
 	//scope matching is actually String matching!!
-	private IContextMenuInvocation invocation;
+	private final IContextMenuInvocation invocation;
     public BurpExtender myburp;
 	public IExtensionHelpers helpers;
 	public PrintWriter stdout;
@@ -36,8 +37,8 @@ class AddHostToScope_Action implements ActionListener{
 	public AddHostToScope_Action(BurpExtender burp,IContextMenuInvocation invocation) {
 		this.invocation  = invocation;
         this.helpers = burp.helpers;
-        this.callbacks = burp.callbacks;
-        this.stderr = burp.stderr;
+        this.callbacks = BurpExtender.callbacks;
+        this.stderr = BurpExtender.stderr;
 	}
 
 	
@@ -47,7 +48,7 @@ class AddHostToScope_Action implements ActionListener{
        try{
         	IHttpRequestResponse[] messages = invocation.getSelectedMessages();
         	for(IHttpRequestResponse message:messages) {
-        		String url = message.getHttpService().toString();
+        		String url = HelperPlus.getBaseURL(message.getHttpService());
 				URL shortUrl = new URL(url);
 	        	callbacks.includeInScope(shortUrl);
         	}
